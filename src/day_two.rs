@@ -83,12 +83,59 @@ fn is_game_possible(game: &Game, constraint: &Set) -> bool {
     s.blue <= constraint.blue && s.red <= constraint.red && s.green <= constraint.green
 }
 
-pub fn run(puzzle_input: &str) {
-    let result = puzzle_input.lines().filter_map(|line| parse_game(&line)).filter(|game| {
-        is_game_possible(game, &Set {red: 12, green: 13, blue: 14})
-    }).map(|game| game.id).sum::<usize>();
+fn fewest_possible_cubes(game: &Game) -> Set {
+    game.sets.iter().fold(
+        Set {
+            blue: 0,
+            red: 0,
+            green: 0,
+        },
+        |acc, set| Set {
+            blue: acc.blue.max(set.blue),
+            green: acc.green.max(set.green),
+            red: acc.red.max(set.red),
+        },
+    )
+}
+
+fn power_of_set(s: &Set) -> usize {
+    s.blue * s.green * s.red
+}
+
+fn run_part_one(puzzle_input: &str) {
+    let result = puzzle_input
+        .lines()
+        .filter_map(|line| parse_game(&line))
+        .filter(|game| {
+            is_game_possible(
+                game,
+                &Set {
+                    red: 12,
+                    green: 13,
+                    blue: 14,
+                },
+            )
+        })
+        .map(|game| game.id)
+        .sum::<usize>();
 
     println!("{}", result);
+}
+
+fn run_part_two(puzzle_input: &str) {
+    let result = puzzle_input
+        .lines()
+        .filter_map(|line| parse_game(&line))
+        .map(|game| fewest_possible_cubes(&game))
+        .map(|set| power_of_set(&set))
+        .sum::<usize>();
+
+    println!("{}", result);
+}
+
+pub fn run(puzzle_input: &str) {
+    run_part_one(&puzzle_input);
+    run_part_two(&puzzle_input);
 }
 
 #[cfg(test)]
