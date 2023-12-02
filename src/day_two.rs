@@ -119,7 +119,7 @@ fn run_part_one(puzzle_input: &str) {
         .map(|game| game.id)
         .sum::<usize>();
 
-    println!("{}", result);
+    println!("Part 1: {}", result);
 }
 
 fn run_part_two(puzzle_input: &str) {
@@ -130,7 +130,7 @@ fn run_part_two(puzzle_input: &str) {
         .map(|set| power_of_set(&set))
         .sum::<usize>();
 
-    println!("{}", result);
+    println!("Part 2: {}", result);
 }
 
 pub fn run(puzzle_input: &str) {
