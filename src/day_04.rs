@@ -61,6 +61,24 @@ impl Puzzle {
             })
             .sum()
     }
+
+    fn total_scratch_cards(&self) -> usize {
+        let mut count: Vec<usize> = vec![1; self.scratch_cards.len()];
+        for (index, card) in self.scratch_cards.iter().enumerate() {
+            let winning_number_count = card.winning.intersection(&card.numbers).count();
+            (0..winning_number_count).for_each(|j| {
+                let current_card_count = match count.get(index) {
+                    Some(v) => *v,
+                    None => 0,
+                };
+                if let Some(elem) = count.get_mut(index + j + 1) {
+                    *elem += current_card_count;
+                }
+            });
+        }
+
+        count.iter().sum()
+    }
 }
 
 impl super::Puzzle for Puzzle {
@@ -70,7 +88,9 @@ impl super::Puzzle for Puzzle {
         println!("Part 1: {}", res);
     }
     fn run_part_two(&self) {
-        println!("Part 2: {}", "NOT IMPLEMENTED");
+        let res = self.total_scratch_cards();
+
+        println!("Part 2: {}", res);
     }
 }
 
@@ -89,5 +109,11 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
     fn test_sample_part_one() {
         let puzzle = Puzzle::new(SAMPLE_INPUT);
         assert_eq!(puzzle.calculate_points(), 13);
+    }
+
+    #[test]
+    fn test_sample_part_two() {
+        let puzzle = Puzzle::new(SAMPLE_INPUT);
+        assert_eq!(puzzle.total_scratch_cards(), 30);
     }
 }
