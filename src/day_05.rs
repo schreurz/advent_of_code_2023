@@ -63,13 +63,13 @@ impl FromStr for Mapping {
 
 #[derive(Debug, Clone, Copy)]
 struct Rule {
-    destination_start: usize,
-    source_start: usize,
-    length: usize,
+    destination_start: i128,
+    source_start: i128,
+    length: i128,
 }
 
 impl Rule {
-    fn new(destination_start: usize, source_start: usize, length: usize) -> Self {
+    fn new(destination_start: i128, source_start: i128, length: i128) -> Self {
         Self {
             destination_start,
             source_start,
@@ -77,7 +77,7 @@ impl Rule {
         }
     }
 
-    fn apply(&self, source_number: usize) -> Option<usize> {
+    fn apply(&self, source_number: i128) -> Option<i128> {
         if source_number >= self.source_start && source_number < self.source_start + self.length {
             if self.source_start < self.destination_start {
                 Some(source_number + (self.destination_start - self.source_start))
@@ -98,10 +98,10 @@ impl FromStr for Rule {
     type Err = ParseRuleError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let get_range = |line: &str| -> Option<(usize, usize, usize)> {
+        let get_range = |line: &str| -> Option<(i128, i128, i128)> {
             let mut range_iter = line
                 .split_whitespace()
-                .filter_map(|w| w.parse::<usize>().ok());
+                .filter_map(|w| w.parse::<i128>().ok());
             match (range_iter.next(), range_iter.next(), range_iter.next()) {
                 (Some(destination_start), Some(source_start), Some(length)) => {
                     Some((destination_start, source_start, length))
@@ -140,9 +140,11 @@ impl Almanac {
         };
 
         self.0[element_index].push(*rule);
+        self.0[element_index]
+            .sort_by(|rule_x, rule_y| rule_x.source_start.cmp(&rule_y.source_start));
     }
 
-    fn seed_info(&self, seed_number: usize) -> [usize; 7] {
+    fn seed_info(&self, seed_number: i128) -> [i128; 7] {
         let mut res = [0; 7];
 
         let mut current_element_number = seed_number;
@@ -167,7 +169,7 @@ impl Almanac {
 #[derive(Debug)]
 pub struct Puzzle {
     almanac: Almanac,
-    seeds: Vec<usize>,
+    seeds: Vec<i128>,
 }
 
 impl Puzzle {
@@ -181,15 +183,15 @@ impl Puzzle {
         Self { almanac, seeds }
     }
 
-    fn parse_input(input: &str) -> (Almanac, Vec<usize>) {
+    fn parse_input(input: &str) -> (Almanac, Vec<i128>) {
         let mut lines = input.lines();
         let seeds = lines
             .next()
             .and_then(|s| s.strip_prefix("seeds: "))
             .map(|s| {
                 s.split_whitespace()
-                    .filter_map(|n| n.parse::<usize>().ok())
-                    .collect::<Vec<usize>>()
+                    .filter_map(|n| n.parse::<i128>().ok())
+                    .collect::<Vec<i128>>()
             })
             .unwrap_or(vec![]);
         let lines = lines.skip(1);
@@ -220,30 +222,40 @@ impl super::Puzzle for Puzzle {
         let all_seed_info = seeds
             .iter()
             .map(|s| almanac.seed_info(*s)[6])
-            .collect::<Vec<usize>>();
+            .collect::<Vec<i128>>();
         let min_location = *all_seed_info.iter().min().unwrap();
         println!("Part 1: {}", min_location);
     }
     fn run_part_two(&self) {
-        let min = self
-            .seeds
+        let seeds = &self.seeds;
+
+        let mut source_ranges = seeds
             .windows(2)
             .step_by(2)
-            .filter_map(|window| {
-                if let [start, length] = &window {
-                    let range = *start..(*start + *length);
-                    let all_seed_info = range
-                        .map(|s| self.almanac.seed_info(s)[6])
-                        .collect::<Vec<usize>>();
-                    let min_location = all_seed_info.iter().min().unwrap();
-                    Some(*min_location)
-                } else {
-                    None
-                }
-            })
-            .min();
-        println!("Part 2: {}", min.unwrap());
+            .map(|w| (w[0], w[1]))
+            .collect::<Vec<(i128, i128)>>();
+
+        for rules in self.almanac.0 {
+            source_ranges = map_ranges(&source_ranges, &rules);
+        }
+
+        println!("Part 2: {}", "NOT IMPLEMENTED");
     }
+}
+
+fn map_ranges(ranges: &Vec<(i128, i128)>, rules: &Vec<Rule>) -> Vec<(i128, i128)> {
+    let destination_ranges = vec![];
+    let rule_overlaps = |range: &(i128, i128), rule: &Rule| {
+        range.0 < rule.source_start + rule.length && range.0 + range.1 > rule.source_start
+    };
+    for range in ranges {
+        loop {
+            if let Some(overlapping_rule) = rules.iter().find(|rule| rule_overlaps(&range, &rule)) {
+            }
+        }
+    }
+
+    destination_ranges
 }
 
 #[cfg(test)]
@@ -290,7 +302,7 @@ humidity-to-location map:
         let all_seed_info = seeds
             .iter()
             .map(|s| almanac.seed_info(*s))
-            .collect::<Vec<[usize; 7]>>();
+            .collect::<Vec<[i128; 7]>>();
         let min_location = all_seed_info.iter().min_by(|x, y| x[6].cmp(&y[6])).unwrap();
         assert_eq!(min_location[6], 35);
 
@@ -303,7 +315,7 @@ humidity-to-location map:
                     dbg!(&range);
                     let all_seed_info = range
                         .map(|s| almanac.seed_info(s)[6])
-                        .collect::<Vec<usize>>();
+                        .collect::<Vec<i128>>();
                     let min_location = all_seed_info.iter().min().unwrap();
                     Some(*min_location)
                 } else {
